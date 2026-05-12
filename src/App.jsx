@@ -1,251 +1,232 @@
-import React, { useState, useEffect } from "react";
-import COLORS from "./theme";
+import { useState, useEffect } from "react";
+import "./global.css";
+import theme from "./theme";
+
+import TabBar from "./components/UI/TabBar";
+import Card from "./components/UI/Card";
+import Button from "./components/UI/Button";
+import ProgressBar from "./components/UI/ProgressBar";
+import Modal from "./components/UI/Modal";
+import VisionGrid from "./components/Vision/VisionGrid";
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState("habits");
+  const [activeTab, setActiveTab] = useState("Habits");
 
-  // Vision Board State
-  const [visionTiles, setVisionTiles] = useState([]);
-  const [newVisionText, setNewVisionText] = useState("");
+  // HABITS
+  const [habits, setHabits] = useState([
+    { name: "Meditate", done: false },
+    { name: "Read 10 minutes", done: false },
+    { name: "Drink 2L water", done: false },
+  ]);
 
-  // Load saved tiles
+  const [habitStreak, setHabitStreak] = useState(
+    Number(localStorage.getItem("habitStreak")) || 0
+  );
+
   useEffect(() => {
-    const saved = localStorage.getItem("visionTiles");
-    if (saved) setVisionTiles(JSON.parse(saved));
-  }, []);
+    localStorage.setItem("habitStreak", habitStreak);
+  }, [habitStreak]);
 
-  // Save tiles
+  const toggleHabit = (index) => {
+    const updated = [...habits];
+    updated[index].done = !updated[index].done;
+    setHabits(updated);
+
+    const allDone = updated.every((h) => h.done);
+    if (allDone) setHabitStreak((s) => s + 1);
+  };
+
+  const resetHabits = () => {
+    setHabits(habits.map((h) => ({ ...h, done: false })));
+  };
+
+  const habitProgress =
+    (habits.filter((h) => h.done).length / habits.length) * 100;
+
+  // DAILY TASKS
+  const [daily, setDaily] = useState([
+    { name: "Journal", done: false },
+    { name: "Affirmations", done: false },
+    { name: "10-minute walk", done: false },
+  ]);
+
+  const dailyProgress =
+    (daily.filter((d) => d.done).length / daily.length) * 100;
+
+  const toggleDaily = (index) => {
+    const updated = [...daily];
+    updated[index].done = !updated[index].done;
+    setDaily(updated);
+  };
+
+  const resetDaily = () => {
+    setDaily(daily.map((d) => ({ ...d, done: false })));
+  };
+
+  // WEEKLY TASKS
+  const [weekly, setWeekly] = useState([
+    { name: "Plan week", done: false },
+    { name: "Clean workspace", done: false },
+    { name: "Review goals", done: false },
+  ]);
+
+  const weeklyProgress =
+    (weekly.filter((w) => w.done).length / weekly.length) * 100;
+
+  const toggleWeekly = (index) => {
+    const updated = [...weekly];
+    updated[index].done = !updated[index].done;
+    setWeekly(updated);
+  };
+
+  const resetWeekly = () => {
+    setWeekly(weekly.map((w) => ({ ...w, done: false })));
+  };
+
+  // VISION BOARD
+  const [visionTiles, setVisionTiles] = useState(
+    JSON.parse(localStorage.getItem("visionTiles")) || []
+  );
+
+  const [modalOpen, setModalOpen] = useState(false);
+  const [newTile, setNewTile] = useState("");
+
   useEffect(() => {
     localStorage.setItem("visionTiles", JSON.stringify(visionTiles));
   }, [visionTiles]);
 
-  // Add tile
-  const addVisionTile = () => {
-    if (!newVisionText.trim()) return;
-
-    const tile = {
-      id: Date.now(),
-      text: newVisionText.trim(),
-      color: COLORS.visionColors[
-        Math.floor(Math.random() * COLORS.visionColors.length)
-      ],
-    };
-
-    setVisionTiles([...visionTiles, tile]);
-    setNewVisionText("");
+  const addTile = () => {
+    if (!newTile.trim()) return;
+    setVisionTiles([...visionTiles, newTile]);
+    setNewTile("");
+    setModalOpen(false);
   };
 
-  // Delete tile
-  const deleteTile = (id) => {
-    setVisionTiles(visionTiles.filter((t) => t.id !== id));
+  const deleteTile = (index) => {
+    const updated = [...visionTiles];
+    updated.splice(index, 1);
+    setVisionTiles(updated);
   };
 
   return (
-    <div
-      style={{
-        width: "100%",
-        minHeight: "100vh",
-        backgroundColor: COLORS.background,
-        color: COLORS.text,
-        padding: 20,
-        boxSizing: "border-box",
-      }}
-    >
-      {/* HEADER */}
-      <div
-        style={{
-          fontSize: 26,
-          fontWeight: 700,
-          marginBottom: 20,
-          textAlign: "center",
-        }}
-      >
-        Manifestation & Habit Tracker
-      </div>
+    <div className="app-container">
+      <TabBar active={activeTab} setActive={setActiveTab} />
 
-      {/* TABS */}
-      <div
-        style={{
-          display: "flex",
-          gap: 10,
-          marginBottom: 20,
-          flexWrap: "wrap",
-          justifyContent: "center",
-        }}
-      >
-        {[
-          { id: "habits", label: "Habits" },
-          { id: "tasks", label: "Tasks" },
-          { id: "journal", label: "Journal" },
-          { id: "affirm", label: "Affirmations" },
-          { id: "lifestyle", label: "Lifestyle" },
-          { id: "vision", label: "Vision Board" },
-          { id: "profile", label: "Profile" },
-        ].map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            style={{
-              padding: "10px 16px",
-              borderRadius: 8,
-              border: "none",
-              cursor: "pointer",
-              backgroundColor:
-                activeTab === tab.id ? COLORS.primary : COLORS.card,
-              color: activeTab === tab.id ? "#fff" : COLORS.text,
-              fontWeight: 600,
-            }}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
-      {/* CONTENT CONTAINER */}
-      <div
-        style={{
-          backgroundColor: COLORS.card,
-          padding: 20,
-          borderRadius: 12,
-          minHeight: 300,
-        }}
-      >
-        {/* HABITS */}
-        {activeTab === "habits" && (
-          <div>
+      {/* HABITS TAB */}
+      {activeTab === "Habits" && (
+        <>
+          <Card>
             <h2>Daily Habits</h2>
-            <p>Track your consistency and build momentum.</p>
-          </div>
-        )}
+            <ProgressBar value={habitProgress} />
+            <p className="streak">🔥 Streak: {habitStreak} days</p>
 
-        {/* TASKS */}
-        {activeTab === "tasks" && (
-          <div>
-            <h2>Tasks</h2>
-            <p>Stay organized and focused on what matters.</p>
-          </div>
-        )}
-
-        {/* JOURNAL */}
-        {activeTab === "journal" && (
-          <div>
-            <h2>Journal</h2>
-            <p>Reflect, write, and grow.</p>
-          </div>
-        )}
-
-        {/* AFFIRMATIONS */}
-        {activeTab === "affirm" && (
-          <div>
-            <h2>Affirmations</h2>
-            <p>Rewire your mindset with positive statements.</p>
-          </div>
-        )}
-
-        {/* LIFESTYLE */}
-        {activeTab === "lifestyle" && (
-          <div>
-            <h2>Lifestyle</h2>
-            <p>Track routines, wellness, and personal growth.</p>
-          </div>
-        )}
-
-        {/* PROFILE */}
-        {activeTab === "profile" && (
-          <div>
-            <h2>Your Profile</h2>
-            <p>Customize your experience and settings.</p>
-          </div>
-        )}
-
-        {/* ⭐ VISION BOARD ⭐ */}
-        {activeTab === "vision" && (
-          <div>
-            <h2>Vision Board</h2>
-            <p>Create and visualize your future.</p>
-
-            {/* Add Tile Input */}
-            <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
-              <input
-                value={newVisionText}
-                onChange={(e) => setNewVisionText(e.target.value)}
-                placeholder="Add a vision tile..."
+            {habits.map((habit, index) => (
+              <div
+                key={index}
                 style={{
-                  flex: 1,
-                  padding: 10,
-                  borderRadius: 8,
-                  border: "1px solid #ccc",
-                }}
-              />
-              <button
-                onClick={addVisionTile}
-                style={{
-                  padding: "10px 16px",
-                  borderRadius: 8,
-                  border: "none",
-                  backgroundColor: COLORS.primary,
-                  color: "#fff",
-                  fontWeight: 600,
-                  cursor: "pointer",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  marginTop: 12,
                 }}
               >
-                Add
-              </button>
-            </div>
+                <span>{habit.name}</span>
+                <input
+                  type="checkbox"
+                  checked={habit.done}
+                  onChange={() => toggleHabit(index)}
+                />
+              </div>
+            ))}
 
-            {/* Tile Grid */}
+            <Button onClick={resetHabits}>Reset Habits</Button>
+          </Card>
+        </>
+      )}
+
+      {/* DAILY TAB */}
+      {activeTab === "Daily" && (
+        <Card>
+          <h2>Daily Checklist</h2>
+          <ProgressBar value={dailyProgress} />
+
+          {daily.map((task, index) => (
             <div
+              key={index}
               style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))",
-                gap: 12,
-                marginTop: 20,
+                display: "flex",
+                justifyContent: "space-between",
+                marginTop: 12,
               }}
             >
-              {visionTiles.map((tile) => (
-                <div
-                  key={tile.id}
-                  style={{
-                    backgroundColor: tile.color,
-                    padding: 14,
-                    borderRadius: 10,
-                    minHeight: 100,
-                    position: "relative",
-                    color: "#fff",
-                    fontWeight: 600,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    textAlign: "center",
-                  }}
-                >
-                  {tile.text}
-
-                  {/* Delete Button */}
-                  <button
-                    onClick={() => deleteTile(tile.id)}
-                    style={{
-                      position: "absolute",
-                      top: 6,
-                      right: 6,
-                      background: "rgba(0,0,0,0.3)",
-                      border: "none",
-                      borderRadius: "50%",
-                      width: 22,
-                      height: 22,
-                      color: "#fff",
-                      cursor: "pointer",
-                      fontSize: 12,
-                    }}
-                  >
-                    ✕
-                  </button>
-                </div>
-              ))}
+              <span>{task.name}</span>
+              <input
+                type="checkbox"
+                checked={task.done}
+                onChange={() => toggleDaily(index)}
+              />
             </div>
-          </div>
-        )}
-      </div>
+          ))}
+
+          <Button onClick={resetDaily}>Reset Daily</Button>
+        </Card>
+      )}
+
+      {/* WEEKLY TAB */}
+      {activeTab === "Weekly" && (
+        <Card>
+          <h2>Weekly Checklist</h2>
+          <ProgressBar value={weeklyProgress} />
+
+          {weekly.map((task, index) => (
+            <div
+              key={index}
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                marginTop: 12,
+              }}
+            >
+              <span>{task.name}</span>
+              <input
+                type="checkbox"
+                checked={task.done}
+                onChange={() => toggleWeekly(index)}
+              />
+            </div>
+          ))}
+
+          <Button onClick={resetWeekly}>Reset Weekly</Button>
+        </Card>
+      )}
+
+      {/* VISION BOARD TAB */}
+      {activeTab === "Vision" && (
+        <>
+          <Card>
+            <h2>Vision Board</h2>
+            <Button onClick={() => setModalOpen(true)}>Add Tile</Button>
+          </Card>
+
+          <VisionGrid tiles={visionTiles} onDelete={deleteTile} />
+
+          <Modal open={modalOpen} onClose={() => setModalOpen(false)}>
+            <h3>Add Vision Tile</h3>
+            <input
+              value={newTile}
+              onChange={(e) => setNewTile(e.target.value)}
+              placeholder="Enter text"
+              style={{
+                width: "100%",
+                padding: 12,
+                borderRadius: 12,
+                border: "1px solid #E6E2F5",
+                marginTop: 12,
+              }}
+            />
+            <Button onClick={addTile}>Add</Button>
+          </Modal>
+        </>
+      )}
     </div>
   );
 }
